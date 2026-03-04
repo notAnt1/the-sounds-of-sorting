@@ -1,12 +1,14 @@
-package edu.grinnell.csc207.soundsofsorting;
+package edu.grinnell.csc207.sorts;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
-import edu.grinnell.csc207.soundsofsorting.sorts.Sorts;
+import edu.grinnell.csc207.sorts.events.SortEvent;
 
 public class SortsTests {
     /**
@@ -38,9 +40,21 @@ public class SortsTests {
         assertTrue(sorted(arr));
     }
 
+    public void testEvents(Function<Integer[], List<SortEvent<Integer>>> func) {
+        Integer[] arr1 = makeTestArray();
+        Integer[] arr2 = makeTestArray();
+        List<SortEvent<Integer>> events = func.apply(arr1);
+        // Check if the sorting algorithm works!
+        assertTrue(sorted(arr1));
+        // Check if the sorting algorithm generated the correct events!
+        Sorts.eventSort(events, arr2);
+        assertTrue(sorted(arr2));
+    }
+
     @Test
     public void testBubbleSort() {
         testSort(Sorts::bubbleSort);
+        testEvents(Sorts::bubbleSort);
     }
     
     @Test
