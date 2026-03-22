@@ -1,6 +1,7 @@
 package edu.grinnell.csc207.soundsofsorting;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import edu.grinnell.csc207.soundsofsorting.events.*;
@@ -33,9 +34,24 @@ public class Sorts {
      */
     public static <T extends Comparable<? super T>> List<SortEvent<T>> bubbleSort(T[] arr) {
         List<SortEvent<T>> events = new ArrayList<>();
-        // TODO: fill me in!
+        int maxIndex = 0;
+        int stopper = arr.length;
+
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < stopper; j++) {
+                events.add(new CompareEvent<>(maxIndex, j));
+                if (arr[maxIndex].compareTo(arr[j]) < 0) {
+                    maxIndex = j;
+                }
+            }
+            events.add(new SwapEvent<T>(maxIndex, stopper - 1));
+            swap(arr, maxIndex, stopper - 1);
+            maxIndex = 0;
+            stopper--;
+        }
         return events;
     }
+
 
     /**
      * Sorts the array according to the selection sort algorithm:
@@ -49,7 +65,21 @@ public class Sorts {
     public static <T extends Comparable<? super T>> List<SortEvent<T>> selectionSort(
             T[] arr) {
         List<SortEvent<T>> events = new ArrayList<>();
-        // TODO: fill me in!
+        int minIndex = arr.length - 1;
+        int stopper = 0;
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int j = arr.length - 1; j >= stopper; j--) {
+                events.add(new CompareEvent<>(minIndex, j));
+                if (arr[minIndex].compareTo(arr[j]) > 0) {
+                    minIndex = j;
+                }
+            }
+            events.add(new SwapEvent<>(minIndex, stopper));
+            swap(arr, minIndex, stopper);
+            minIndex = arr.length - 1;
+            stopper++;
+        }
         return events;
     }
 
@@ -65,9 +95,90 @@ public class Sorts {
     public static <T extends Comparable<? super T>> List<SortEvent<T>> insertionSort(
             T[] arr) {
         List<SortEvent<T>> events = new ArrayList<>();
-        // TODO: fill me in!
+        int stopper = 0;
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = stopper; j > 0; j--) {
+                events.add(new CompareEvent<T>(j, j - 1));
+                if (arr[j].compareTo(arr[j - 1]) < 0) {
+                    events.add(new SwapEvent<T>(j, j - 1));
+                    swap(arr, j, j - 1);
+                }
+            }
+            stopper++;
+        }
         return events;
     }
+
+
+  public static <T extends Comparable<? super T>> void mergeHelper(T[] arr, T[] shadow, int lower, int upper, List<SortEvent<T>> events) {
+
+        if (upper - lower <= 1) {
+            if (upper - lower == 1) {
+                events.add(new CopyEvent<T>(lower, arr[lower]));
+                shadow[lower] = arr[lower];
+            }
+            return;
+        } else if (upper - lower == 2) {
+            if (arr[lower].compareTo(arr[upper - 1]) > 0) {
+                events.add(new CopyEvent<T>(lower, arr[upper - 1]));
+                shadow[lower] = arr[upper - 1];
+                events.add(new CopyEvent<T>(upper - 1, arr[lower]));
+                shadow[upper - 1] = arr[lower];
+            } else {
+                events.add(new CopyEvent<T>(lower, arr[lower]));
+                shadow[upper - 1] = arr[upper - 1];
+                events.add(new CopyEvent<T>(upper - 1, arr[upper - 1]));
+                shadow[lower] = arr[lower];
+            }
+            events.add(new CopyEvent<T>(lower, shadow[lower]));
+            arr[lower] = shadow[lower];
+            events.add(new CopyEvent<T>(upper - 1, shadow[upper - 1]));
+            arr[upper - 1] = shadow[upper - 1];
+            return;
+        }
+
+        int mid = ((upper - lower) / 2) + lower;
+
+        mergeHelper(arr, shadow, lower, mid, events);
+        mergeHelper(arr, shadow, mid, upper, events);
+
+        int index1 = lower;
+        int index2 = mid;
+        int i = lower;
+        for (; i < upper && index1 < mid && index2 < upper; i++) {
+            events.add(new CompareEvent<T>(index1, index2));
+            if (arr[index1].compareTo(arr[index2]) < 0) {
+                events.add(new CopyEvent<T>(i, arr[index1]));
+                shadow[i] = arr[index1];
+                index1++;
+            } else {
+                events.add(new CopyEvent<T>(i, arr[index2]));
+                shadow[i] = arr[index2];
+                index2++;
+            }
+        }
+
+        if (index1 < mid) {
+            for (int j = index1; j < mid; j++) {
+                events.add(new CopyEvent<T>(i, arr[j]));
+                shadow[i] = arr[j];
+                i++;
+            }
+        } else if (index2 < upper) {
+            for (int j = index2; j < upper; j++) {
+                events.add(new CopyEvent<T>(i, arr[j]));
+                shadow[i] = arr[j];
+                i++;
+            }
+        }
+
+        for (int j = lower; j < upper; j++) {
+            events.add(new CopyEvent<T>(j, shadow[j]));
+            arr[j] = shadow[j];
+    }
+
+    }
+
 
     /**
      * Sorts the array according to the merge sort algorithm.
@@ -78,9 +189,60 @@ public class Sorts {
     public static <T extends Comparable<? super T>> List<SortEvent<T>> mergeSort(
             T[] arr) {
         List<SortEvent<T>> events = new ArrayList<>();
-        // TODO: fill me in!
+        T[] shadow = Arrays.copyOf(arr, arr.length);
+        mergeHelper(arr, shadow, 0, arr.length, events);
         return events;
     }
+
+
+
+public static <T extends Comparable<? super T>> void quickHelper(
+        T[] arr, int lower, int upper, List<SortEvent<T>> events) {
+        //check base case fr
+        if (upper - lower <= 1) {
+            return;
+        }
+
+        int mid = ((upper - lower) / 2) + lower; //find midpoint
+
+        events.add(new CompareEvent<T>(mid, lower));
+        events.add(new CompareEvent<T>(lower, upper - 1));
+        events.add(new CompareEvent<T>(upper - 1, lower));
+        events.add(new CompareEvent<T>(lower, mid));
+        if ((arr[mid].compareTo(arr[lower]) < 0 && arr[lower].compareTo(arr[upper - 1]) < 0) ||
+            (arr[upper - 1].compareTo(arr[lower]) < 0 && arr[lower].compareTo(arr[mid]) < 0)){ //if lower is median, switch lower to last element
+            events.add(new SwapEvent<T>(lower, upper - 1));
+            swap(arr, lower, upper - 1);
+
+
+        } else {
+            events.add(new CompareEvent<T>(lower, mid));
+            events.add(new CompareEvent<T>(mid, upper - 1));
+            events.add(new CompareEvent<T>(upper - 1, mid));
+            events.add(new CompareEvent<T>(mid, lower));
+            if ((arr[lower].compareTo(arr[mid]) < 0 && arr[mid].compareTo(arr[upper - 1]) < 0) ||
+                (arr[upper - 1].compareTo(arr[mid]) < 0 && arr[mid].compareTo(arr[lower]) < 0)){ //if mid is median, switch mid to last element
+            events.add(new SwapEvent<T>(mid, upper - 1));
+            swap(arr, mid, upper - 1);
+            }
+        }
+        int boundary = lower; //boundary of sorted region
+        for (int i = lower; i < upper - 1; i++){ //sweep.
+            events.add(new CompareEvent<T>(i, upper - 1));
+            if (arr[i].compareTo(arr[upper - 1]) <= 0){ //if element is less than pivot, move it to the boundary region.
+                events.add(new SwapEvent<T>(boundary, i));
+                swap(arr, i, boundary);
+                boundary++;
+            }
+        }
+        events.add(new SwapEvent<T>(boundary, upper - 1));
+        swap(arr, boundary, upper - 1);
+        quickHelper(arr, lower, boundary, events);
+        quickHelper(arr, boundary + 1, upper, events);
+    }
+
+
+
 
     /**
      * Sorts the array according to the quick sort algorithm.
@@ -90,7 +252,7 @@ public class Sorts {
      */
     public static <T extends Comparable<? super T>> List<SortEvent<T>> quickSort(T[] arr) {
         List<SortEvent<T>> events = new ArrayList<>();
-        // TODO: fill me in!
+        quickHelper(arr, 0, arr.length, events);
         return events;
     }
 
@@ -101,6 +263,9 @@ public class Sorts {
      */
     public static <T extends Comparable<? super T>> void eventSort(
         List<SortEvent<T>> events, T[] arr) {
-        // TODO: implement me!
+            for (SortEvent<T> event : events){
+                event.apply(arr);
+            }
+        }
     }
-}
+
