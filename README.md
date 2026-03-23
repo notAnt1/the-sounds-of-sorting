@@ -1,8 +1,9 @@
 # CSC 207: The Sounds of Sorting
 
-Author: _(TODO: insert your name here!)_
+Author: 
+- Cadel Saszik
+- Oscar To
 
 ## Resources
 
-*   _(TODO: list your resources here!)_
-*   ...
+*   https://osera.cs.grinnell.edu/ttap/data-structures-labs/the-sounds-of-sorting.html
